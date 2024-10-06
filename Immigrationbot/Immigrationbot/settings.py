@@ -11,6 +11,25 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
+# settings.py
+
+import os
+from dotenv import load_dotenv
+load_dotenv()
+PASS = os.getenv('PASS')
+
+SECRET_KEY = os.environ.get('SECRET_KEY', 'your-fallback-secret-key')
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'your_db_name',
+        'USER': 'your_db_user',
+        'PASSWORD': os.environ.get('DB_PASSWORD'),
+        'HOST': 'localhost',
+        'PORT': '5432',
+    }
+}
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -24,6 +43,17 @@ SECRET_KEY = 'django-insecure-9bx-_n^f_m9z2pd0oshh6ym%r-)zru03m3xwyx+xsqoi086=q-
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
+
+
+PASS = os.environ.get('PASS')
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'yourdoubtsaremyproblem@gmail.com'
+EMAIL_HOST_PASSWORD = PASS
+
+SITE_URL = 'http://localhost:8000'  # For local development
 
 ALLOWED_HOSTS = []
 
