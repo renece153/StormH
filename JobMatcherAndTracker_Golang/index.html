@@ -1,0 +1,70 @@
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Job Matcher</title>
+</head>
+<body>
+<h1>Job Matcher</h1>
+<form id="jobForm">
+    <label for="experience">Job Experience:</label><br>
+    <textarea id="experience" rows="5" cols="50" placeholder="Enter your job experience here..."></textarea><br><br>
+    <label for="skills">Skills:</label><br>
+    <textarea id="skills" rows="5" cols="50" placeholder="Enter your skills here..."></textarea><br><br>
+    <input type="submit" value="Match">
+</form>
+<h2>Matched Jobs</h2>
+<div id="results"></div>
+<h2>Job Application Tracker</h2>
+<div id="jobTracker"></div>
+
+<script>
+    document.getElementById("jobForm").addEventListener("submit", function(event) {
+        event.preventDefault();
+        const experience = document.getElementById("experience").value;
+        const skills = document.getElementById("skills").value;
+
+        fetch("/match", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ experience: experience, skills: skills })
+        })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("results").innerHTML = "";
+                data.forEach(job => {
+                    const jobElement = document.createElement("div");
+                    jobElement.innerHTML = `<strong>${job.title}</strong> - <a href="mailto:${job.hrEmail}">${job.hrEmail}</a>`;
+                    document.getElementById("results").appendChild(jobElement);
+                });
+
+                // Fetch all jobs for application tracker
+                fetch("/jobs")
+                    .then(response => response.json())
+                    .then(jobs => {
+                        document.getElementById("jobTracker").innerHTML = "";
+                        jobs.forEach(job => {
+                            const jobCheckbox = document.createElement("input");
+                            jobCheckbox.type = "checkbox";
+                            jobCheckbox.id = job.title;
+                            jobCheckbox.name = job.title;
+
+                            const jobLabel = document.createElement("label");
+                            jobLabel.htmlFor = job.title;
+                            jobLabel.innerText = job.title;
+
+                            document.getElementById("jobTracker").appendChild(jobCheckbox);
+                            document.getElementById("jobTracker").appendChild(jobLabel);
+                            document.getElementById("jobTracker").appendChild(document.createElement("br"));
+                        });
+                    });
+            })
+            .catch(error => {
+                document.getElementById("results").innerText = "Error: " + error;
+            });
+    });
+</script>
+</body>
+</html>
