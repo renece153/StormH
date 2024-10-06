@@ -1,0 +1,93 @@
+@import url('https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Short+Stack&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+
+body {
+    background-color: #9f9999;
+    font-family: Arial, sans-serif;
+
+}
+.chatbox1 {
+    width: 550px;
+    margin: 50px auto;
+    background-color: rgb(252, 246, 246);
+    border-radius: 10px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    height: 80vh;
+}
+.chat-header {
+    padding: 15px;
+    background-color: #087142;
+    color: white;
+    text-align: center;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+}
+.chatbd1 {
+    flex: 1;
+    padding: 20px;
+    max-height: 400px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+.chft {
+    padding: 10px;
+    display: flex;
+    justify-content: space-between;
+}
+.grp {
+    display: flex;
+    width: 100%;
+}
+.fmcntrl {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    margin-right: 10px;
+    margin-top: 3rem;
+}
+.button1 {
+    background-color: #087142;
+    color: white;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 3rem;
+}
+
+h4{
+    font-family: "Short Stack", sans-serif;
+}
+.button1:hover {
+    background-color: #02311c;
+}
+.chtbl1 {
+    padding: 10px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    display: inline-block;
+    max-width: 75%;
+    word-wrap: break-word;
+}
+.chtbl1.user {
+    background-color: #087142;
+    color: white;
+    align-self: flex-end;
+    text-align: right;
+    
+}
+.chtbl1.bot {
+    background-color: #f1f1f1;
+    align-self: flex-start;
+    text-align: left;
+}
