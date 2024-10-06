@@ -1,0 +1,144 @@
+create table log_system_backend (
+	log_id int identity(1,1) primary key
+	, error_no varchar(100)
+	, "error_message" varchar(255)
+	, datestamp datetime default current_timestamp
+	, complete varchar(1)
+)
+
+create table users(
+	userid varchar(100) primary key
+	, daterecorded datetime not null
+	, email varchar(100) unique
+)
+
+create table keywords (
+	keyword_id varchar(100) primary key
+	, keyword varchar(255)
+)
+
+create table addresses (
+	address_id varchar(100) primary key
+	, address_line_1 varchar(255)
+	, address_line_2 varchar(255)
+	, location_id varchar(100)
+	, CONSTRAINT FK_location_address FOREIGN KEY (location_id)
+        REFERENCES locations(location_id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+)
+
+create table locations (
+	location_id varchar(100) primary key
+	, city varchar(100)
+	, province varchar(100)
+	, zipcode varchar(100)
+)
+
+create table companies (
+	company_id varchar(100) primary key
+	, company_name varchar(255) not null
+	, address_id varchar(100)
+	, CONSTRAINT FK_address_company FOREIGN KEY (address_id)
+        REFERENCES addresses(address_id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+)
+
+
+create table applications(
+	application_id varchar(100) primary key
+	, company_id varchar(100) 
+	, dateapplied datetime
+	, position varchar(100)
+	, userid varchar(100)
+	, keyword_id varchar(100)
+	, CONSTRAINT FK_company FOREIGN KEY (company_id)
+        REFERENCES companies(company_id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+	, CONSTRAINT FK_user FOREIGN KEY (userid)
+        REFERENCES users(userid)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+	, CONSTRAINT FK_keyword FOREIGN KEY (keyword_id)
+        REFERENCES keywords(keyword_id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+)
+
+create table application_statuses_codes (
+	status_id int identity(1,1) primary key
+	, status_description varchar(100)
+)
+
+create table application_statuses(
+	application_status_id int identity(1,1) primary key
+	, application_id varchar(100)
+	, status_id int
+	, CONSTRAINT FK_statuses FOREIGN KEY (status_id)
+        REFERENCES application_statuses_codes(status_id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+)
+
+
+
+create view vw_summary_of_applications as
+with application_status as (
+select 
+	x.application_id
+	, y.status_description
+	, case when x.status_id = y.status_id then 'X' else NULL end as indicator
+from sfu_hackathon.dbo.application_statuses x, 
+sfu_hackathon.dbo.application_statuses_codes y
+), pvt_application_status as (
+SELECT
+	application_id
+	, [Applied]
+	, [Scheduled Interview]
+	, [Pre-employment Requirements]
+	, [Rejected]
+FROM application_status PVT 
+PIVOT (MAX(indicator) FOR status_description IN ([Applied], [Scheduled Interview], [Pre-employment Requirements], [Rejected])) pvt_table
+), applications as (
+select
+	A.application_id
+	, MAX(C.email) as email
+	, MAX(B.company_name) as company_name
+	, MAX(A.position) as position
+	, MAX(A.dateapplied) as dateapplied
+	, MAX(D.address_line_1) as address_line_1
+	, MAX(D.address_line_2) as address_line_2
+	, MAX(E.city) as city
+	, MAX(E.province) as province
+	, MAX(E.zipcode) as zipcode
+from sfu_hackathon.dbo.applications A
+join sfu_hackathon.dbo.companies B
+ON B.company_id = A.company_id
+join sfu_hackathon.dbo.users C
+ON C.userid = A.userid
+join sfu_hackathon.dbo.addresses D
+ON D.address_id = B.address_id
+join sfu_hackathon.dbo.locations E
+ON E.location_id = D.location_id
+group by application_id
+)
+
+SELECT
+	email
+	, company_name
+	, position
+	, dateapplied
+	, address_line_1
+	, address_line_2
+	, city
+	, province
+	, zipcode
+	, [Applied]
+	, [Scheduled Interview]
+	, [Pre-employment Requirements]
+	, [Rejected]
+FROM applications A
+LEFT JOIN pvt_application_status B
+ON A.application_id = B.application_id
