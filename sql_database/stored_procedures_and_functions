@@ -1,0 +1,224 @@
+create procedure sp_create_company_record @company_name varchar(100), @zipcode varchar(100), @address_line1 varchar(100) = NULL, @address_line2 varchar(100) = NULL
+as
+begin
+	begin try
+	declare @check_if_company_exists int, @location_id varchar(100), @location_id_check int,  @address_id varchar(100)
+
+	select @check_if_company_exists = (select count(1) from sfu_hackathon.dbo.companies where company_name = @company_name)
+
+	select @location_id_check = (select count(1) from sfu_hackathon.dbo.locations where zipcode = @zipcode)
+
+	IF @check_if_company_exists = 0 and @location_id_check = 1
+	BEGIN
+
+		select @address_id = dbo.fx_generate_address_id()
+
+
+		insert into addresses (
+		address_id
+		, address_line_1
+		, address_line_2 
+		, location_id
+		)
+		SELECT @address_id, @address_line1, @address_line2, location_id from sfu_hackathon.dbo.locations where zipcode = @zipcode;
+
+
+		insert into sfu_hackathon.dbo.companies(company_id, company_name, address_id)
+		select dbo.fx_generate_company_id (), @company_name, @address_id
+	END
+	ELSE
+	BEGIN
+		IF @check_if_company_exists = 1
+		BEGIN
+			RAISERROR ('Company Already Exists', 16,  1 );
+		END
+
+		IF @location_id_check = 0
+		BEGIN
+			RAISERROR ('Zip Code cannot be found', 16,  1 );
+		END
+	END
+	end try
+	begin catch
+	Insert  into sfu_hackathon.dbo.log_system_backend(error_no, "error_message", complete)
+		select  ERROR_NUMBER(), ERROR_MESSAGE(), 'N'
+	end catch
+end
+
+alter procedure sp_apply_for_job @email varchar(100), @company_name varchar(100), @position varchar(100) = NULL
+as
+begin
+	begin try
+	declare @check_if_job_application_exists int, @company_id varchar(100), @user_id varchar(100), @application_id varchar(100)
+
+	select @company_id = company_id from sfu_hackathon.dbo.companies where company_name = @company_name;
+
+	select @user_id = userid from sfu_hackathon.dbo.users where email = @email;
+
+	IF @company_id is not null and @user_id is not null
+	BEGIN
+	select @check_if_job_application_exists = (select count(1) from sfu_hackathon.dbo.applications 
+					where company_id = @company_id
+					and userid = @user_id
+					and position = @position
+					)
+	END
+	ELSE
+	BEGIN
+		IF @company_id is NULL
+		BEGIN
+			RAISERROR ('Company Should Exists before applying', 16,  1 );
+		END
+
+		IF @user_id is NULL
+		BEGIN
+			RAISERROR ('User Should Exists before applying', 16,  1 );
+		END
+	END
+
+	IF @check_if_job_application_exists = 0
+	BEGIN
+		select @application_id = dbo.fx_application_id()
+		insert into sfu_hackathon.dbo.applications (application_id, company_id, dateapplied, position, userid)
+		select @application_id, @company_id, current_timestamp, @position, @user_id
+
+		insert into application_statuses (application_id, status_id)
+		select @application_id, 1
+	END
+	end try
+	begin catch
+		Insert  into sfu_hackathon.dbo.log_system_backend(error_no, "error_message", complete)
+		select  ERROR_NUMBER(), ERROR_MESSAGE(), 'N'
+	end catch
+end
+
+alter procedure update_job_status_application @email varchar(100), @company_name varchar(100), @position varchar(100) = NULL, @status varchar(255)
+as
+begin
+begin try
+	declare @check_if_job_application_exists int, @company_id varchar(100), @user_id varchar(100), @application_id varchar(100), @status_value int
+
+	select @company_id = company_id from sfu_hackathon.dbo.companies where company_name = @company_name;
+
+	select @user_id = userid from sfu_hackathon.dbo.users where email = @email;
+
+	select @status_value =
+		case 
+		when lower(@status) like '%interview%' then 3
+		when lower(@status) like '%reject%' then 4
+		when lower(@status) like '%none%' then 2
+		when lower(@status) like '%accepted%' then 6
+		else 5
+		end
+
+	IF @company_id is not null and @user_id is not null
+	BEGIN
+	select @check_if_job_application_exists = (select count(1) from sfu_hackathon.dbo.applications 
+					where company_id = @company_id
+					and userid = @user_id
+					and position = @position
+					)
+	END
+	ELSE
+	BEGIN
+		IF @company_id is NULL
+		BEGIN
+			RAISERROR ('Company Should Exists before updating application', 16,  1 );
+		END
+
+		IF @user_id is NULL
+		BEGIN
+			RAISERROR ('User Should Exists before updating application', 16,  1 );
+		END
+	END
+
+	IF @check_if_job_application_exists = 1
+	BEGIN
+
+		select @application_id = application_id from sfu_hackathon.dbo.applications 
+					where company_id = @company_id
+					and userid = @user_id
+					and position = @position
+
+
+		insert into application_statuses (application_id, status_id)
+		select @application_id, @status_value
+	END
+	end try
+	begin catch
+		Insert  into sfu_hackathon.dbo.log_system_backend(error_no, "error_message", complete)
+		select  ERROR_NUMBER(), ERROR_MESSAGE(), 'N'
+	end catch
+end
+alter procedure sp_create_user @email varchar(100)
+as
+begin
+	begin try
+
+		declare @email_checker int
+
+		select @email_checker =
+			case 
+			when @email like '%_@__%.__%' then 1
+			else 0 end
+
+		IF @email_checker = 1
+		BEGIN
+		insert into users(userid, daterecorded, email)
+		select dbo.fx_generate_user_id(), current_timestamp, @email
+		END
+		ELSE
+		BEGIN
+			RAISERROR ('Email Should be a valid format', 16,  1 );
+		END
+	end try
+	begin catch
+		Insert  into sfu_hackathon.dbo.log_system_backend(error_no, "error_message", complete)
+		select  ERROR_NUMBER(), ERROR_MESSAGE(), 'N'
+	end catch
+end
+
+ALTER FUNCTION dbo.fx_application_id ()
+returns varchar(100) as
+	begin
+	declare @fourdigit int = (select count(1) from sfu_hackathon.dbo.applications) + 1;
+	declare @output varchar(100)
+	set @output = (SELECT 'AP' + replicate('0',8 - len(@fourdigit)) + cast( @fourdigit as varchar(8)) + replace(CONVERT(varchar, getdate(), 8),':',''))
+	return @output
+	end
+
+ALTER FUNCTION dbo.fx_generate_company_id ()
+returns varchar(10) as
+	begin
+	declare @fourdigit int = (select count(1) from sfu_hackathon.dbo.companies) + 1;
+	declare @output varchar(40)
+	set @output = (SELECT 'COM' + replicate('0',7 - len(@fourdigit)) + cast( @fourdigit as varchar(7)))
+	return @output
+	end
+
+CREATE FUNCTION dbo.fx_generate_user_id ()
+returns varchar(10) as
+	begin
+	declare @fourdigit int = (select count(1) from sfu_hackathon.dbo.users) + 1;
+	declare @output varchar(40)
+	set @output = (SELECT 'USR' + replicate('0',7 - len(@fourdigit)) + cast( @fourdigit as varchar(7)))
+	return @output
+	end
+
+ALTER FUNCTION dbo.fx_generate_location_id ()
+returns varchar(10) as
+	begin
+	declare @fourdigit int = (select count(1) from sfu_hackathon.dbo.locations) + 1;
+	declare @output varchar(40)
+	set @output = (SELECT 'LOC' + replicate('0',7 - len(@fourdigit)) + cast( @fourdigit as varchar(7)))
+	return @output
+	end
+
+ALTER FUNCTION dbo.fx_generate_address_id ()
+returns varchar(10) as
+	begin
+	declare @fourdigit int = (select count(1) from sfu_hackathon.dbo.addresses) + 1;
+	declare @output varchar(40)
+	set @output = (SELECT 'ADD' + replicate('0',7 - len(@fourdigit)) + cast( @fourdigit as varchar(7)))
+	return @output
+	end
