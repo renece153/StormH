@@ -10,3 +10,14 @@ class UserEmail(models.Model):
 
     def __str__(self):
         return self.email
+
+
+class ChatMessage(models.Model):
+    user_email = models.ForeignKey(UserEmail, on_delete=models.CASCADE)
+    message = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user_email}: {self.message}"
+
+        

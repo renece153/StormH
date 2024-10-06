@@ -1,0 +1,56 @@
+<!-- userauth/templates/userauth/chat.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Panel</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        .chat-container {
+            height: 80vh;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+        }
+        .message {
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .user-message {
+            background-color: #e0f7fa;
+        }
+        .bot-message {
+            background-color: #ffe0b2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h2>Chat Panel</h2>
+        <div class="chat-container">
+            <div id="chat-messages">
+                {% for msg in messages %}
+                    <div class="message {% if msg.user_email == request.user %}user-message{% else %}bot-message{% endif %}">
+                        <strong>{{ msg.user_email.email }}:</strong> {{ msg.message }}
+                        <small class="text-muted">{{ msg.timestamp }}</small>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        <form method="POST" action="{% url 'send_message' %}">
+            {% csrf_token %}
+            <div class="input-group mt-3">
+                <input type="text" class="form-control" name="message" placeholder="Type your message here..." required>
+                <div class="input-group-append">
+                    <button type="submit" class="btn btn-success">Send</button>
+                </div>
+            </div>
+        </form>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.0.0/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
